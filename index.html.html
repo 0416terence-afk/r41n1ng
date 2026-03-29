@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>r41n1ng // NEURAL ACCESS</title>
+  <style>
+    :root {
+      --neon-green: #00ff9d;
+      --neon-purple: #c300ff;
+      --neon-blue: #00d0ff;
+      --neon-pink: #ff00aa;
+      --bg: #010101;
+      --text: #e0e0e0;
+      --muted: #888;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* 經典 Hack 二進位雨背景 */
+    #binary-bg {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.15;
+      overflow: hidden;
+    }
+    .binary {
+      position: absolute;
+      color: var(--neon-green);
+      font-size: 14px;
+      font-family: monospace;
+      white-space: pre;
+      opacity: 0.7;
+      animation: fall linear infinite;
+      text-shadow: 0 0 8px var(--neon-green);
+    }
+    @keyframes fall {
+      to { transform: translateY(100vh); }
+    }
+
+    .scanline {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(transparent 50%, rgba(0,255,157,0.06) 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+      animation: scan 8s linear infinite;
+      z-index: 9999;
+      opacity: 0.08;
+    }
+    @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+
+    /* 自訂游標與拖尾 */
+    #custom-cursor {
+      position: fixed;
+      width: 24px; height: 24px;
+      border: 2px solid var(--neon-purple);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 99999;
+      mix-blend-mode: difference;
+      box-shadow: 0 0 25px var(--neon-purple);
+      transition: transform 0.1s ease;
+    }
+
+    .trail {
+      position: fixed;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 99998;
+      box-shadow: 0 0 20px currentColor;
+      opacity: 0.85;
+      transition: all 0.6s ease-out;
+    }
+
+    /* 頂部導航 */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 72px;
+      background: rgba(1,1,1,0.98);
+      border-bottom: 2px solid var(--neon-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 60px;
+      z-index: 100;
+      box-shadow: 0 4px 25px rgba(0,255,157,0.4);
+    }
+    .logo {
+      position: absolute;
+      left: 50px;
+      font-size: 27px;
+      font-weight: bold;
+      color: var(--neon-green);
+      text-shadow: 0 0 20px var(--neon-green);
+      letter-spacing: 6px;
+    }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 16px;
+      padding: 10px 24px;
+      transition: all 0.3s;
+    }
+    nav a:hover, nav a.active {
+      color: var(--neon-green);
+      text-shadow: 0 0 15px var(--neon-green);
+    }
+    nav a.active::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 7px; height: 7px;
+      background: var(--neon-green);
+      border-radius: 50%;
+    }
+
+    main {
+      margin-top: 90px;
+      padding: 40px 60px 120px;
+      max-width: 1080px;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+      z-index: 2;
+    }
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 0.8s ease forwards; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(40px); } to { opacity:1; transform: translateY(0); } }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 160px 40px 110px;
+      border: 1px solid var(--neon-green);
+      margin-bottom: 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .typewriter {
+      font-size: 78px;
+      color: var(--neon-green);
+      text-shadow: 0 0 45px var(--neon-green);
+      letter-spacing: 10px;
+      display: inline-block;
+    }
+    .subtitle {
+      font-size: 27px;
+      color: var(--neon-blue);
+      text-shadow: 0 0 25px var(--neon-blue);
+      margin-top: 30px;
+      line-height: 1.5;
+    }
+
+    h2 { color: var(--neon-purple); font-size: 29px; margin: 70px 0 35px; border-bottom: 1px dashed var(--neon-purple); padding-bottom: 14px; }
+    .card {
+      background: rgba(20,20,35,0.88);
+      border: 1px solid var(--neon-green);
+      padding: 36px;
+      margin-bottom: 45px;
+      box-shadow: 0 0 30px rgba(0,255,157,0.35);
+      transition: all 0.4s ease;
+    }
+    .card:hover {
+      border-color: var(--neon-purple);
+      box-shadow: 0 0 55px rgba(195,0,255,0.65);
+      transform: translateY(-8px);
+      animation: heavyGlitch 0.6s linear forwards;
+    }
+    @keyframes heavyGlitch {
+      0% { transform: translate(4px, 3px) skew(2deg); }
+      20% { transform: translate(-6px, -4px) skew(-3deg); }
+      40% { transform: translate(5px, 5px); }
+      70% { transform: translate(-5px, -5px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    .item { padding: 26px 0; border-bottom: 1px dashed rgba(0,255,157,0.3); }
+    .item:last-child { border-bottom: none; }
+    .title { color: var(--neon-green); font-size: 21px; margin-bottom: 10px; }
+    .meta { color: var(--muted); font-size: 15px; }
+    .desc { margin-top: 14px; color: #ddd; line-height: 1.8; }
+    a { color: var(--neon-blue); text-decoration: underline dashed; }
+    a:hover { color: var(--neon-purple); text-shadow: 0 0 18px var(--neon-purple); }
+
+    .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 28px; }
+    .skill { background: rgba(20,20,35,0.85); border: 1px solid var(--neon-blue); padding: 28px; }
+    .bar { height: 11px; background: #1a1a1a; border: 1px solid var(--neon-blue); margin-top: 18px; }
+    .fill { height: 100%; background: linear-gradient(90deg, var(--neon-green), var(--neon-purple), var(--neon-blue)); }
+    footer { text-align: center; padding: 70px 20px 50px; color: var(--muted); font-size: 14px; border-top: 1px dashed var(--neon-green); }
+  </style>
+</head>
+<body>
+
+<div id="binary-bg"></div>
+<div class="scanline"></div>
+<div id="custom-cursor"></div>
+
+<header>
+  <div class="logo">r41n1ng</div>
+  <nav>
+    <a href="#" class="nav-link active" data-page="home">STATUS</a>
+    <a href="#" class="nav-link" data-page="resume">EXPERIENCE</a>
+    <a href="#" class="nav-link" data-page="projects">EXPLOITS</a>
+    <a href="#" class="nav-link" data-page="timeline">PATH</a>
+  </nav>
+</header>
+
+<main>
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div class="hero">
+      <div class="typewriter glitch" id="type-title"></div>
+      <p class="subtitle" id="type-subtitle"></p>
+    </div>
+
+    <h2>CORE DIRECTIVE</h2>
+    <div class="card">
+      <div class="item">
+        <div class="title">主打方向</div>
+        <div class="meta">reverse engineer / CTF</div>
+        <div class="desc">偏好炸電腦與漏洞挖掘，正在與 Reverse 苦戰中</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESUME -->
+  <div id="page-resume" class="page">
+    <h2>EXPERIENCE LOG</h2>
+    <div class="card" id="resume-content"></div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div id="page-projects" class="page">
+    <h2>NOTES &amp; EXPLOITS</h2>
+    <div class="card" id="projects-content"></div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div id="page-timeline" class="page">
+    <h2>LEARNING PATH</h2>
+    <div class="card" id="timeline-content"></div>
+    
+    <h2>EXTERNAL NODES</h2>
+    <div class="card" id="links-content"></div>
+  </div>
+</main>
+
+<footer>
+  © 2026 r41n1ng • NEURAL INTERFACE v1.0 • CONNECTION STABLE
+</footer>
+
+<script>
+// 二進位雨背景
+function createBinaryRain() {
+  const bg = document.getElementById('binary-bg');
+  for (let i = 0; i < 150; i++) {
+    const binary = document.createElement('div');
+    binary.className = 'binary';
+    const patterns = ['101001', '010110', '110010', '001101', '111000', '000111'];
+    binary.textContent = patterns[Math.floor(Math.random() * patterns.length)];
+    binary.style.left = Math.random() * 100 + 'vw';
+    binary.style.top = '-' + Math.random() * 100 + 'vh';
+    binary.style.animationDuration = (Math.random() * 8 + 2) + 's';
+    binary.style.fontSize = (Math.random() * 10 + 12) + 'px';
+    binary.style.opacity = Math.random() * 0.6 + 0.8;
+    bg.appendChild(binary);
+  }
+}
+
+// 你的資料
+const PROFILE = {
+  resume: [
+    { title: "picoCTF", meta: "2025", desc: "", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/SyxJXFWObx" },
+    { title: "picoCTF 2026", meta: "2026", desc: "", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/B1QlirWcZx" },
+    { title: "TSCCTF", meta: "2025", desc: "", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/HyVbu0A_Zx" },
+    { title: "THJCC", meta: "2025", desc: "", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/rJ_L8O8d-x" },
+    { title: "Fhctf", meta: "2025", desc: "忘寫WP，只有學到凱薩加密和簡單的 XOR", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/rJOxZ_wVWe" },
+    { title: "ASIS CTF", meta: "2025", desc: "第一次參加 CTF，還不太會打，主要是熟悉環境和工具，沒WP", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/r1IBRQCX-x" }
+  ],
+
+  projects: [
+    { title: "Linux 基礎筆記", meta: "2026-01", desc: "常用指令、權限提升、常見服務配置整理。", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/BJnbfx3nex" },
+    { title: "Reverse 入門筆記", meta: "2026-01", desc: "常見逆向技巧、工具使用與簡單動態分析。", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/Hklq0_Fbbl" },
+    { title: "Web bas", meta: "2026-01", desc: "Web 漏洞整理。", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/SyB1mjPAxg" },
+    { title: "Web adv", meta: "2026-01", desc: "more WRB", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/HyVQpdTWWl" },
+    { title: "Pwn 筆記", meta: "2026-01", desc: "根本算沒寫", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/BJnbfx3nex" },
+    { title: "BLteam", meta: "2026-01", desc: "volatility 分析", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/SyNij6Iwbx" }
+  ],
+
+  timeline: [
+    { title: "2026網路安全分區小作文", meta: "", desc: "哈，分區打不出來", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/S1RhNPUsbx" }
+  ],
+
+  links: [
+    { title: "GitHub", desc: "程式碼、小工具與解題腳本", url: "https://github.com/" },
+    { title: "HackMD 筆記總集", desc: "資安學習記錄", url: "https://hackmd.io/@VMMN30ECT5CKLjFl7pA8pA/HJOOqBmlZl" },
+    { title: "Instagram", desc: "@416_ctn", url: "https://instagram.com/416_ctn" }
+  ],
+
+  skills: [
+    { name: "Cybersecurity", level: 67 },
+    { name: "CTF", level: 5 },
+    { name: "Reverse", level: 6 },
+    { name: "Pwn", level: 4 }
+  ]
+};
+
+// 渲染函式
+function renderSection(id, items) {
+  const container = document.getElementById(id);
+  container.innerHTML = items.map(item => `
+    <div class="item">
+      <div class="title">${item.title}</div>
+      ${item.meta ? `<div class="meta">${item.meta}</div>` : ''}
+      ${item.desc ? `<div class="desc">${item.desc}</div>` : ''}
+      ${item.url ? `<br><a href="${item.url}" target="_blank">→ ACCESS NODE</a>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderSkills() {
+  const home = document.getElementById('page-home');
+  const html = `
+    <h2>SKILL MATRIX</h2>
+    <div class="skills-grid">
+      ${PROFILE.skills.map(s => `
+        <div class="skill">
+          <div style="display:flex;justify-content:space-between;color:var(--neon-blue);font-size:17px;">
+            <span>${s.name}</span><span>${s.level}%</span>
+          </div>
+          <div class="bar"><div class="fill" style="width:${s.level}%"></div></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  home.innerHTML += html;
+}
+
+// 初始化
+createBinaryRain();
+renderSection('resume-content', PROFILE.resume);
+renderSection('projects-content', PROFILE.projects);
+renderSection('timeline-content', PROFILE.timeline);
+renderSection('links-content', PROFILE.links);
+renderSkills();
+
+// 頁面切換
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(`page-${link.dataset.page}`).classList.add('active');
+  });
+});
+
+// 打字機效果
+function humanTypeWriter(element, text, baseSpeed = 50, callback) {
+  let i = 0;
+  element.textContent = '';
+  function type() {
+    if (i < text.length) {
+      element.textContent += text.charAt(i);
+      i++;
+      let delay = baseSpeed + Math.random() * 35;
+      if ('。，\n'.includes(text.charAt(i-1))) delay += 180;
+      if (Math.random() < 0.08) delay += 120;
+      setTimeout(type, delay);
+    } else if (callback) callback();
+  }
+  type();
+}
+
+window.addEventListener('load', () => {
+  const titleEl = document.getElementById('type-title');
+  const subtitleEl = document.getElementById('type-subtitle');
+  
+  humanTypeWriter(titleEl, "r41n1ng", 75, () => {
+    subtitleEl.style.opacity = "1";
+    humanTypeWriter(subtitleEl, "資安學習者 • cybersecurity • CTF\n賽德克族 • 正在與 Reverse 持續戰鬥", 42);
+  });
+});
+
+// 多色拖尾游標
+const cursor = document.getElementById('custom-cursor');
+const trailColors = ['#c300ff', '#00d0ff', '#00ff9d', '#ff00aa', '#9d00ff'];
+
+document.addEventListener('mousemove', (e) => {
+  cursor.style.left = `${e.clientX}px`;
+  cursor.style.top = `${e.clientY}px`;
+
+  for (let i = 0; i < 3; i++) {
+    const trail = document.createElement('div');
+    trail.className = 'trail';
+    const offsetX = (Math.random() - 0.5) * 12;
+    const offsetY = (Math.random() - 0.5) * 12;
+    
+    trail.style.left = `${e.clientX + offsetX}px`;
+    trail.style.top = `${e.clientY + offsetY}px`;
+    trail.style.background = trailColors[Math.floor(Math.random() * trailColors.length)];
+    trail.style.width = `${10 + Math.random() * 8}px`;
+    trail.style.height = trail.style.width;
+    
+    document.body.appendChild(trail);
+
+    setTimeout(() => {
+      trail.style.opacity = '0';
+      trail.style.transform = `scale(0.15) translate(${offsetX*2}px, ${offsetY*2}px)`;
+    }, 80 + i * 40);
+
+    setTimeout(() => trail.remove(), 1300);
+  }
+});
+
+document.addEventListener('click', () => {
+  cursor.style.transform = 'scale(2.8)';
+  setTimeout(() => cursor.style.transform = 'scale(1)', 280);
+});
+</script>
+</body>
+</html>
